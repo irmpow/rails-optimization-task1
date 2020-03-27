@@ -4,8 +4,9 @@ require 'json'
 require 'pry'
 require 'date'
 require 'minitest/autorun'
+require 'ruby-progressbar'
 
-DATA_FILE = 'data1.txt'
+DATA_FILE = 'data2.txt'
 
 class User
   attr_reader :attributes, :sessions
@@ -48,6 +49,13 @@ end
 def work(file_name = DATA_FILE)
   file_lines = File.read(file_name).split("\n")
 
+  parts_of_work = 14 #number of hard code increments
+
+  progress_bar = ProgressBar.create(
+      total: parts_of_work,
+      format: '%a, %J, %E, %B' #elapsed time, percent complete, est time, bar
+  )
+
   users = []
   sessions = []
 
@@ -56,6 +64,8 @@ def work(file_name = DATA_FILE)
     users = users + [parse_user(line)] if cols[0] == 'user'
     sessions = sessions + [parse_session(line)] if cols[0] == 'session'
   end
+
+  progress_bar.increment
 
   # Отчёт в json
   #   - Сколько всего юзеров +
@@ -83,9 +93,15 @@ def work(file_name = DATA_FILE)
     uniqueBrowsers += [browser] if uniqueBrowsers.all? { |b| b != browser }
   end
 
+  progress_bar.increment
+
   report['uniqueBrowsersCount'] = uniqueBrowsers.count
 
+  progress_bar.increment
+
   report['totalSessions'] = sessions.count
+
+  progress_bar.increment
 
   report['allBrowsers'] =
     sessions
@@ -94,6 +110,8 @@ def work(file_name = DATA_FILE)
       .sort
       .uniq
       .join(',')
+
+  progress_bar.increment
 
   # Статистика по пользователям
   users_objects = []
@@ -105,6 +123,8 @@ def work(file_name = DATA_FILE)
     users_objects = users_objects + [user_object]
   end
 
+  progress_bar.increment
+
   report['usersStats'] = {}
 
   # Собираем количество сессий по пользователям
@@ -112,37 +132,53 @@ def work(file_name = DATA_FILE)
     { 'sessionsCount' => user.sessions.count }
   end
 
+  progress_bar.increment
+
   # Собираем количество времени по пользователям
   collect_stats_from_users(report, users_objects) do |user|
     { 'totalTime' => user.sessions.map {|s| s['time']}.map {|t| t.to_i}.sum.to_s + ' min.' }
   end
+
+  progress_bar.increment
 
   # Выбираем самую длинную сессию пользователя
   collect_stats_from_users(report, users_objects) do |user|
     { 'longestSession' => user.sessions.map {|s| s['time']}.map {|t| t.to_i}.max.to_s + ' min.' }
   end
 
+  progress_bar.increment
+
   # Браузеры пользователя через запятую
   collect_stats_from_users(report, users_objects) do |user|
     { 'browsers' => user.sessions.map {|s| s['browser']}.map {|b| b.upcase}.sort.join(', ') }
   end
+
+  progress_bar.increment
 
   # Хоть раз использовал IE?
   collect_stats_from_users(report, users_objects) do |user|
     { 'usedIE' => user.sessions.map{|s| s['browser']}.any? { |b| b.upcase =~ /INTERNET EXPLORER/ } }
   end
 
+  progress_bar.increment
+
   # Всегда использовал только Chrome?
   collect_stats_from_users(report, users_objects) do |user|
     { 'alwaysUsedChrome' => user.sessions.map{|s| s['browser']}.all? { |b| b.upcase =~ /CHROME/ } }
   end
+
+  progress_bar.increment
 
   # Даты сессий через запятую в обратном порядке в формате iso8601
   collect_stats_from_users(report, users_objects) do |user|
     { 'dates' => user.sessions.map{|s| s['date']}.map {|d| Date.parse(d)}.sort.reverse.map { |d| d.iso8601 } }
   end
 
+  progress_bar.increment
+
   File.write('result.json', "#{report.to_json}\n")
+
+  progress_bar.increment
 end
 
 class TestMe < Minitest::Test
@@ -171,12 +207,12 @@ session,2,3,Chrome 20,84,2016-11-25
   end
 
   def test_result
+    # prevent from error test
+    correctness_test
+
     start_time = Time.now
     work
     end_time = Time.now
-
-    # prevent from error test
-    correctness_test
 
     # current results on short presets
     execution_not_regressed start_time, end_time
@@ -191,13 +227,13 @@ session,2,3,Chrome 20,84,2016-11-25
   def execution_not_regressed(start_time, end_time, file_name = DATA_FILE)
     case file_name
     when 'data1.txt'
-      current_test_results = 6
+      current_test_results = 7
     when 'data2.txt'
-      current_test_results = 25
+      current_test_results = 26
     when 'data4.txt'
-      current_test_results = 100
+      current_test_results = 101
     when 'data8.txt'
-      current_test_results = 404
+      current_test_results = 405
     when 'data_large.txt'
       current_test_results = 30
     end
