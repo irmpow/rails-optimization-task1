@@ -5,7 +5,7 @@ require 'pry'
 require 'date'
 require 'minitest/autorun'
 
-DATA_FILE = 'data8.txt'
+DATA_FILE = 'data1.txt'
 
 class User
   attr_reader :attributes, :sessions
@@ -45,8 +45,8 @@ def collect_stats_from_users(report, users_objects, &block)
   end
 end
 
-def work
-  file_lines = File.read(DATA_FILE).split("\n")
+def work(file_name = DATA_FILE)
+  file_lines = File.read(file_name).split("\n")
 
   users = []
   sessions = []
@@ -175,8 +175,21 @@ session,2,3,Chrome 20,84,2016-11-25
     work
     end_time = Time.now
 
+    # prevent from error test
+    correctness_test
+
     # current results on short presets
-    case DATA_FILE
+    execution_not_regressed start_time, end_time
+  end
+
+  def correctness_test
+    work 'data.txt'
+    expected_result = '{"totalUsers":3,"uniqueBrowsersCount":14,"totalSessions":15,"allBrowsers":"CHROME 13,CHROME 20,CHROME 35,CHROME 6,FIREFOX 12,FIREFOX 32,FIREFOX 47,INTERNET EXPLORER 10,INTERNET EXPLORER 28,INTERNET EXPLORER 35,SAFARI 17,SAFARI 29,SAFARI 39,SAFARI 49","usersStats":{"Leida Cira":{"sessionsCount":6,"totalTime":"455 min.","longestSession":"118 min.","browsers":"FIREFOX 12, INTERNET EXPLORER 28, INTERNET EXPLORER 28, INTERNET EXPLORER 35, SAFARI 29, SAFARI 39","usedIE":true,"alwaysUsedChrome":false,"dates":["2017-09-27","2017-03-28","2017-02-27","2016-10-23","2016-09-15","2016-09-01"]},"Palmer Katrina":{"sessionsCount":5,"totalTime":"218 min.","longestSession":"116 min.","browsers":"CHROME 13, CHROME 6, FIREFOX 32, INTERNET EXPLORER 10, SAFARI 17","usedIE":true,"alwaysUsedChrome":false,"dates":["2017-04-29","2016-12-28","2016-12-20","2016-11-11","2016-10-21"]},"Gregory Santos":{"sessionsCount":4,"totalTime":"192 min.","longestSession":"85 min.","browsers":"CHROME 20, CHROME 35, FIREFOX 47, SAFARI 49","usedIE":false,"alwaysUsedChrome":false,"dates":["2018-09-21","2018-02-02","2017-05-22","2016-11-25"]}}}' + "\n"
+    assert_equal expected_result, File.read('result.json')
+  end
+
+  def execution_not_regressed(start_time, end_time, file_name = DATA_FILE)
+    case file_name
     when 'data1.txt'
       current_test_results = 6
     when 'data2.txt'
