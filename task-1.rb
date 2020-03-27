@@ -198,6 +198,8 @@ session,2,3,Chrome 20,84,2016-11-25
       current_test_results = 100
     when 'data8.txt'
       current_test_results = 404
+    when 'data_large.txt'
+      current_test_results = 30
     end
 
     metric_exec_time = end_time - start_time
