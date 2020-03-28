@@ -4,7 +4,7 @@ require_relative "task-1.rb"
 RubyProf.measure_mode = RubyProf::WALL_TIME
 
 result = RubyProf.profile do
-  work "data1.txt"
+  work "data16.txt"
 end
 
 printer = RubyProf::GraphHtmlPrinter.new(result)

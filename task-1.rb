@@ -6,7 +6,7 @@ require 'date'
 require 'minitest/autorun'
 # require 'ruby-progressbar'
 
-DATA_FILE = 'data64.txt'
+DATA_FILE = 'data16.txt'
 
 class User
   attr_reader :attributes, :sessions
@@ -46,20 +46,11 @@ def collect_stats_from_users(report, users_objects, &block)
   end
 end
 
-def work(file_name = DATA_FILE)
-  file_lines = File.read(file_name).split("\n")
-
-  # parts_of_work = 14 #number of hard code increments
-
-  # progress_bar = ProgressBar.create(
-  #     total: parts_of_work,
-  #     format: '%a, %J, %E, %B' #elapsed time, percent complete, est time, bar
-  # )
-
+def parse_data_from_file(file_name = DATA_FILE)
   users = []
   sessions = []
   users_session = {}
-
+  file_lines = File.read(file_name).split("\n")
   file_lines.each do |line|
     cols = line.split(',')
     users = users + [parse_user(line)] if cols[0] == 'user'
@@ -68,14 +59,35 @@ def work(file_name = DATA_FILE)
       parsed_session = parse_session(line)
       sessions.append parsed_session
       if users_session[parsed_session["user_id"]].nil?
-        # binding.pry
         users_session[parsed_session["user_id"]] = [parsed_session]
       else
-        # binding.pry
         users_session[parsed_session["user_id"]].append parsed_session
       end
     end
   end
+  [users, sessions, users_session]
+end
+
+def count_unique_browsers(sessions)
+  uniqueBrowsers = []
+  sessions.each do |session|
+    browser = session['browser']
+    uniqueBrowsers += [browser] if uniqueBrowsers.all? { |b| b != browser }
+  end
+  uniqueBrowsers
+end
+
+def work(file_name = DATA_FILE)
+
+  # parts_of_work = 14 #number of hard code increments
+
+  # progress_bar = ProgressBar.create(
+  #     total: parts_of_work,
+  #     format: '%a, %J, %E, %B' #elapsed time, percent complete, est time, bar
+  # )
+
+  users, sessions, users_session = parse_data_from_file file_name
+
 
   # progress_bar.increment
 
@@ -99,11 +111,7 @@ def work(file_name = DATA_FILE)
   report[:totalUsers] = users.count
 
   # Подсчёт количества уникальных браузеров
-  uniqueBrowsers = []
-  sessions.each do |session|
-    browser = session['browser']
-    uniqueBrowsers += [browser] if uniqueBrowsers.all? { |b| b != browser }
-  end
+  uniqueBrowsers = count_unique_browsers sessions
 
   # progress_bar.increment
 
