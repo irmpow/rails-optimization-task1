@@ -3,10 +3,10 @@
 require 'json'
 require 'pry'
 require 'date'
-require 'minitest/autorun'
+# require 'minitest/autorun'
 require 'ruby-progressbar'
 
-DATA_FILE = 'data2.txt'
+DATA_FILE = 'data1.txt'
 
 class User
   attr_reader :attributes, :sessions
@@ -49,12 +49,12 @@ end
 def work(file_name = DATA_FILE)
   file_lines = File.read(file_name).split("\n")
 
-  parts_of_work = 14 #number of hard code increments
+  # parts_of_work = 14 #number of hard code increments
 
-  progress_bar = ProgressBar.create(
-      total: parts_of_work,
-      format: '%a, %J, %E, %B' #elapsed time, percent complete, est time, bar
-  )
+  # progress_bar = ProgressBar.create(
+  #     total: parts_of_work,
+  #     format: '%a, %J, %E, %B' #elapsed time, percent complete, est time, bar
+  # )
 
   users = []
   sessions = []
@@ -65,7 +65,7 @@ def work(file_name = DATA_FILE)
     sessions = sessions + [parse_session(line)] if cols[0] == 'session'
   end
 
-  progress_bar.increment
+  # progress_bar.increment
 
   # Отчёт в json
   #   - Сколько всего юзеров +
@@ -93,15 +93,15 @@ def work(file_name = DATA_FILE)
     uniqueBrowsers += [browser] if uniqueBrowsers.all? { |b| b != browser }
   end
 
-  progress_bar.increment
+  # progress_bar.increment
 
   report['uniqueBrowsersCount'] = uniqueBrowsers.count
 
-  progress_bar.increment
+  # progress_bar.increment
 
   report['totalSessions'] = sessions.count
 
-  progress_bar.increment
+  # progress_bar.increment
 
   report['allBrowsers'] =
     sessions
@@ -111,7 +111,7 @@ def work(file_name = DATA_FILE)
       .uniq
       .join(',')
 
-  progress_bar.increment
+  # progress_bar.increment
 
   # Статистика по пользователям
   users_objects = []
@@ -123,7 +123,7 @@ def work(file_name = DATA_FILE)
     users_objects = users_objects + [user_object]
   end
 
-  progress_bar.increment
+  # progress_bar.increment
 
   report['usersStats'] = {}
 
@@ -132,114 +132,115 @@ def work(file_name = DATA_FILE)
     { 'sessionsCount' => user.sessions.count }
   end
 
-  progress_bar.increment
+  # progress_bar.increment
 
   # Собираем количество времени по пользователям
   collect_stats_from_users(report, users_objects) do |user|
     { 'totalTime' => user.sessions.map {|s| s['time']}.map {|t| t.to_i}.sum.to_s + ' min.' }
   end
 
-  progress_bar.increment
+  # progress_bar.increment
 
   # Выбираем самую длинную сессию пользователя
   collect_stats_from_users(report, users_objects) do |user|
     { 'longestSession' => user.sessions.map {|s| s['time']}.map {|t| t.to_i}.max.to_s + ' min.' }
   end
 
-  progress_bar.increment
+  # progress_bar.increment
 
   # Браузеры пользователя через запятую
   collect_stats_from_users(report, users_objects) do |user|
     { 'browsers' => user.sessions.map {|s| s['browser']}.map {|b| b.upcase}.sort.join(', ') }
   end
 
-  progress_bar.increment
+  # progress_bar.increment
 
   # Хоть раз использовал IE?
   collect_stats_from_users(report, users_objects) do |user|
     { 'usedIE' => user.sessions.map{|s| s['browser']}.any? { |b| b.upcase =~ /INTERNET EXPLORER/ } }
   end
 
-  progress_bar.increment
+  # progress_bar.increment
 
   # Всегда использовал только Chrome?
   collect_stats_from_users(report, users_objects) do |user|
     { 'alwaysUsedChrome' => user.sessions.map{|s| s['browser']}.all? { |b| b.upcase =~ /CHROME/ } }
   end
 
-  progress_bar.increment
+  # progress_bar.increment
 
   # Даты сессий через запятую в обратном порядке в формате iso8601
   collect_stats_from_users(report, users_objects) do |user|
     { 'dates' => user.sessions.map{|s| s['date']}.map {|d| Date.parse(d)}.sort.reverse.map { |d| d.iso8601 } }
   end
 
-  progress_bar.increment
+  # progress_bar.increment
 
   File.write('result.json', "#{report.to_json}\n")
 
-  progress_bar.increment
+  # progress_bar.increment
 end
 
-class TestMe < Minitest::Test
-  def setup
-    File.write('result.json', '')
-    File.write('data.txt',
-'user,0,Leida,Cira,0
-session,0,0,Safari 29,87,2016-10-23
-session,0,1,Firefox 12,118,2017-02-27
-session,0,2,Internet Explorer 28,31,2017-03-28
-session,0,3,Internet Explorer 28,109,2016-09-15
-session,0,4,Safari 39,104,2017-09-27
-session,0,5,Internet Explorer 35,6,2016-09-01
-user,1,Palmer,Katrina,65
-session,1,0,Safari 17,12,2016-10-21
-session,1,1,Firefox 32,3,2016-12-20
-session,1,2,Chrome 6,59,2016-11-11
-session,1,3,Internet Explorer 10,28,2017-04-29
-session,1,4,Chrome 13,116,2016-12-28
-user,2,Gregory,Santos,86
-session,2,0,Chrome 35,6,2018-09-21
-session,2,1,Safari 49,85,2017-05-22
-session,2,2,Firefox 47,17,2018-02-02
-session,2,3,Chrome 20,84,2016-11-25
-')
-  end
-
-  def test_result
-    # prevent from error test
-    correctness_test
-
-    start_time = Time.now
-    work
-    end_time = Time.now
-
-    # current results on short presets
-    execution_not_regressed start_time, end_time
-  end
-
-  def correctness_test
-    work 'data.txt'
-    expected_result = '{"totalUsers":3,"uniqueBrowsersCount":14,"totalSessions":15,"allBrowsers":"CHROME 13,CHROME 20,CHROME 35,CHROME 6,FIREFOX 12,FIREFOX 32,FIREFOX 47,INTERNET EXPLORER 10,INTERNET EXPLORER 28,INTERNET EXPLORER 35,SAFARI 17,SAFARI 29,SAFARI 39,SAFARI 49","usersStats":{"Leida Cira":{"sessionsCount":6,"totalTime":"455 min.","longestSession":"118 min.","browsers":"FIREFOX 12, INTERNET EXPLORER 28, INTERNET EXPLORER 28, INTERNET EXPLORER 35, SAFARI 29, SAFARI 39","usedIE":true,"alwaysUsedChrome":false,"dates":["2017-09-27","2017-03-28","2017-02-27","2016-10-23","2016-09-15","2016-09-01"]},"Palmer Katrina":{"sessionsCount":5,"totalTime":"218 min.","longestSession":"116 min.","browsers":"CHROME 13, CHROME 6, FIREFOX 32, INTERNET EXPLORER 10, SAFARI 17","usedIE":true,"alwaysUsedChrome":false,"dates":["2017-04-29","2016-12-28","2016-12-20","2016-11-11","2016-10-21"]},"Gregory Santos":{"sessionsCount":4,"totalTime":"192 min.","longestSession":"85 min.","browsers":"CHROME 20, CHROME 35, FIREFOX 47, SAFARI 49","usedIE":false,"alwaysUsedChrome":false,"dates":["2018-09-21","2018-02-02","2017-05-22","2016-11-25"]}}}' + "\n"
-    assert_equal expected_result, File.read('result.json')
-  end
-
-  def execution_not_regressed(start_time, end_time, file_name = DATA_FILE)
-    case file_name
-    when 'data1.txt'
-      current_test_results = 7
-    when 'data2.txt'
-      current_test_results = 26
-    when 'data4.txt'
-      current_test_results = 101
-    when 'data8.txt'
-      current_test_results = 405
-    when 'data_large.txt'
-      current_test_results = 30
-    end
-
-    metric_exec_time = end_time - start_time
-    metric_exec_result = metric_exec_time < current_test_results
-    assert_equal metric_exec_result, true
-  end
-end
+# class TestMe < Minitest::Test
+#   def setup
+#     File.write('result.json', '')
+#     File.write('data.txt',
+# 'user,0,Leida,Cira,0
+# session,0,0,Safari 29,87,2016-10-23
+# session,0,1,Firefox 12,118,2017-02-27
+# session,0,2,Internet Explorer 28,31,2017-03-28
+# session,0,3,Internet Explorer 28,109,2016-09-15
+# session,0,4,Safari 39,104,2017-09-27
+# session,0,5,Internet Explorer 35,6,2016-09-01
+# user,1,Palmer,Katrina,65
+# session,1,0,Safari 17,12,2016-10-21
+# session,1,1,Firefox 32,3,2016-12-20
+# session,1,2,Chrome 6,59,2016-11-11
+# session,1,3,Internet Explorer 10,28,2017-04-29
+# session,1,4,Chrome 13,116,2016-12-28
+# user,2,Gregory,Santos,86
+# session,2,0,Chrome 35,6,2018-09-21
+# session,2,1,Safari 49,85,2017-05-22
+# session,2,2,Firefox 47,17,2018-02-02
+# session,2,3,Chrome 20,84,2016-11-25
+# ')
+#   end
+#
+#   def test_result
+#     # prevent from error test
+#     correctness_test
+#
+#     start_time = Time.now
+#     work
+#     end_time = Time.now
+#
+#     # current results on short presets
+#     execution_not_regressed start_time, end_time
+#   end
+#
+#   def correctness_test
+#     work 'data.txt'
+#     expected_result = '{"totalUsers":3,"uniqueBrowsersCount":14,"totalSessions":15,"allBrowsers":"CHROME 13,CHROME 20,CHROME 35,CHROME 6,FIREFOX 12,FIREFOX 32,FIREFOX 47,INTERNET EXPLORER 10,INTERNET EXPLORER 28,INTERNET EXPLORER 35,SAFARI 17,SAFARI 29,SAFARI 39,SAFARI 49","usersStats":{"Leida Cira":{"sessionsCount":6,"totalTime":"455 min.","longestSession":"118 min.","browsers":"FIREFOX 12, INTERNET EXPLORER 28, INTERNET EXPLORER 28, INTERNET EXPLORER 35, SAFARI 29, SAFARI 39","usedIE":true,"alwaysUsedChrome":false,"dates":["2017-09-27","2017-03-28","2017-02-27","2016-10-23","2016-09-15","2016-09-01"]},"Palmer Katrina":{"sessionsCount":5,"totalTime":"218 min.","longestSession":"116 min.","browsers":"CHROME 13, CHROME 6, FIREFOX 32, INTERNET EXPLORER 10, SAFARI 17","usedIE":true,"alwaysUsedChrome":false,"dates":["2017-04-29","2016-12-28","2016-12-20","2016-11-11","2016-10-21"]},"Gregory Santos":{"sessionsCount":4,"totalTime":"192 min.","longestSession":"85 min.","browsers":"CHROME 20, CHROME 35, FIREFOX 47, SAFARI 49","usedIE":false,"alwaysUsedChrome":false,"dates":["2018-09-21","2018-02-02","2017-05-22","2016-11-25"]}}}' + "\n"
+#     assert_equal expected_result, File.read('result.json')
+#   end
+#
+#   def execution_not_regressed(start_time, end_time, file_name = DATA_FILE)
+#     case file_name
+#     when 'data1.txt'
+#       current_test_results = 7
+#     when 'data2.txt'
+#       current_test_results = 26
+#     when 'data4.txt'
+#       current_test_results = 101
+#     when 'data8.txt'
+#       current_test_results = 405
+#     when 'data_large.txt'
+#       current_test_results = 30
+#     end
+#
+#     metric_exec_time = end_time - start_time
+#     metric_exec_result = metric_exec_time < current_test_results
+#     assert_equal metric_exec_result, true
+#   end
+# end
+work
