@@ -7,7 +7,7 @@ require "date"
 require "minitest/autorun"
 # require 'ruby-progressbar'
 
-DATA_FILE = "data.txt"
+DATA_FILE = "data128.txt"
 
 class User
   attr_reader :attributes, :sessions
@@ -47,15 +47,44 @@ def collect_stats_from_users(report, users_objects, &block)
   end
 end
 
-def parse_data_from_file(file_name = DATA_FILE)
+# def parse_data_from_file(file_name = DATA_FILE)
+#   users = []
+#   sessions = []
+#   users_session = {}
+#   unique_browser = Set.new
+#   file_lines = File.read(file_name).split("\n")
+#   file_lines.each do |line|
+#     cols = line.split(",")
+#     users += [parse_user(line)] if cols[0] == "user"
+#
+#     if cols[0] == "session"
+#       parsed_session = parse_session(line)
+#       sessions.append parsed_session
+#       if users_session[parsed_session["user_id"]].nil?
+#         users_session[parsed_session["user_id"]] = [parsed_session]
+#       else
+#         users_session[parsed_session["user_id"]].append parsed_session
+#       end
+#       unique_browser.add parsed_session["browser"]
+#     end
+#   end
+#   [users, sessions, users_session, unique_browser]
+# end
+
+def work(file_name = DATA_FILE)
+
   users = []
   sessions = []
   users_session = {}
-  unique_browser = Set.new
+  report = {}
+  unique_browsers = SortedSet.new
+
   file_lines = File.read(file_name).split("\n")
   file_lines.each do |line|
     cols = line.split(",")
-    users += [parse_user(line)] if cols[0] == "user"
+    if cols[0] == "user"
+      users.append(parse_user(line))
+    end
 
     if cols[0] == "session"
       parsed_session = parse_session(line)
@@ -65,13 +94,9 @@ def parse_data_from_file(file_name = DATA_FILE)
       else
         users_session[parsed_session["user_id"]].append parsed_session
       end
-      unique_browser.add parsed_session["browser"]
+      unique_browsers.add parsed_session["browser"].upcase
     end
   end
-  [users, sessions, users_session, unique_browser]
-end
-
-def work(file_name = DATA_FILE)
 
   # parts_of_work = 14 #number of hard code increments
 
@@ -80,7 +105,7 @@ def work(file_name = DATA_FILE)
   #     format: '%a, %J, %E, %B' #elapsed time, percent complete, est time, bar
   # )
 
-  users, sessions, users_session, unique_browsers = parse_data_from_file file_name
+  # users, sessions, users_session, unique_browsers = parse_data_from_file file_name
 
 
   # progress_bar.increment
@@ -100,8 +125,6 @@ def work(file_name = DATA_FILE)
   #     - Всегда использовал только Хром? +
   #     - даты сессий в порядке убывания через запятую +
 
-  report = {}
-
   report[:totalUsers] = users.count
 
   report["uniqueBrowsersCount"] = unique_browsers.count
@@ -112,7 +135,7 @@ def work(file_name = DATA_FILE)
 
   # progress_bar.increment
 
-  report["allBrowsers"] = unique_browsers.to_a.map { |b| b.upcase }.sort.join(",")
+  report["allBrowsers"] = unique_browsers.to_a.join(",")
 
   # progress_bar.increment
 
@@ -124,7 +147,7 @@ def work(file_name = DATA_FILE)
     user_sessions = users_session[user["id"]]
     # binding.pry
     user_object = User.new(attributes: attributes, sessions: user_sessions)
-    users_objects += [user_object]
+    users_objects.append(user_object)
   end
 
   # progress_bar.increment
@@ -155,7 +178,7 @@ def work(file_name = DATA_FILE)
      # Всегда использовал только Chrome?
      "alwaysUsedChrome" => user_browsers_upcased.all? { |b| b.start_with? "CHROME" },
      # Даты сессий через запятую в обратном порядке в формате iso8601
-     "dates" => user.sessions.map { |s| Date.strptime(s["date"], "%Y-%m-%d") }.sort.reverse.map { |d| d.iso8601 }}
+     "dates" => user.sessions.map { |s| s["date"] }.sort.reverse}
   end
 
   File.write("result.json", "#{report.to_json}\n")
@@ -215,17 +238,17 @@ session,2,3,Chrome 20,84,2016-11-25
     when "data2.txt"
       current_test_results = 1
     when "data4.txt"
-      current_test_results = 3
+      current_test_results = 1
     when "data8.txt"
-      current_test_results = 6
+      current_test_results = 2
     when "data16.txt"
-      current_test_results = 8
+      current_test_results = 2
     when "data32.txt"
-      current_test_results = 23
+      current_test_results = 6
     when "data64.txt"
-      current_test_results = 101
+      current_test_results = 11
     when "data128.txt"
-      current_test_results = 614
+      current_test_results = 25
     when "data_large.txt"
       current_test_results = 30
     end
